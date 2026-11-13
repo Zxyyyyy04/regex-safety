@@ -1,0 +1,24 @@
+# Python 编译缓存 (防止 __pycache__ 传上去)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+.venv/
+ENV/
+
+# IDE 配置文件 (比如 PyCharm 的 .idea, VSCode 的 .vscode)
+.idea/
+.vscode/
+*.swp
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 打包/构建产物
+build/
+dist/
+*.egg-info/
