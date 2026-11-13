@@ -5,6 +5,11 @@
 from .nfa import epsilon_closure
 
 
+class DFAStateExplosion(Exception):
+    """自定义异常：DFA 状态数超过设定阈值，主动抛出以防止电脑卡死"""
+    pass
+
+
 class DFA:
     def __init__(self):
         self.trans = {}  # state_id -> {char: state_id}
@@ -13,7 +18,7 @@ class DFA:
         self.state_count = 0
 
 
-def build_dfa(nfa):
+def build_dfa(nfa, max_states=5000):
     dfa = DFA()
 
     # 初始状态是 NFA 起始状态的 epsilon 闭包
@@ -35,7 +40,6 @@ def build_dfa(nfa):
             dfa.accepts.add(current_id)
 
         # 收集当前集合能遇到的所有字符
-        # 注意：'*' 代表任意字符，这里为了简化，只取具体的字符做转移
         chars = set()
         for s in current_set:
             if s in nfa.trans:
@@ -59,6 +63,14 @@ def build_dfa(nfa):
                 state_map[next_closure] = new_id
                 dfa.trans[new_id] = {}
                 queue.append(next_closure)
+
+                # ================= 核心升级：状态爆炸拦截 =================
+                # 如果状态数超过了设定的阈值，直接抛异常中断
+                if len(state_map) > max_states:
+                    raise DFAStateExplosion(
+                        f"DFA 状态数超过阈值 {max_states}，主动终止以防止内存耗尽"
+                    )
+                # ==========================================================
 
             next_id = state_map[next_closure]
             dfa.trans[current_id][ch] = next_id

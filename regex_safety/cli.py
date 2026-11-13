@@ -12,7 +12,7 @@ if __package__ in (None, ""):
     from regex_safety.rewrite import rewrite, to_string
     from regex_safety.equivalence import sample_equivalent, dfa_isomorphic
     from regex_safety.nfa import build
-    from regex_safety.dfa import build_dfa
+    from regex_safety.dfa import build_dfa, DFAStateExplosion
 else:
     # 正常的包导入
     from .parser import Parser, ParseError
@@ -20,7 +20,7 @@ else:
     from .rewrite import rewrite, to_string
     from .equivalence import sample_equivalent, dfa_isomorphic
     from .nfa import build
-    from .dfa import build_dfa
+    from .dfa import build_dfa, DFAStateExplosion
 
 
 def check(pattern):
@@ -35,12 +35,17 @@ def check(pattern):
     # 构建 NFA
     nfa = build(ast)
 
-    # 尝试构建 DFA 并统计状态数（加 try-except 防爆炸）
+    # 尝试构建 DFA 并统计状态数
     try:
-        dfa = build_dfa(nfa)
+        # 核心升级：传入 max_states=5000 阈值
+        dfa = build_dfa(nfa, max_states=5000)
         dfa_states = dfa.state_count
+    except DFAStateExplosion:
+        # 捕获我们自定义的爆炸异常
+        dfa_states = "状态爆炸 (主动拦截)"
     except Exception:
-        dfa_states = "状态爆炸 (可能耗尽内存)"
+        # 捕获其他未知的构建异常
+        dfa_states = "构建失败 (未知错误)"
 
     new_ast, changed = rewrite(ast)
     new_pat = to_string(new_ast) if changed else pattern
